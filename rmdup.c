@@ -5,6 +5,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "lsdir.c"
+
 #define FALSE 0
 #define TRUE 1
 #define BUF_LENGTH 256
@@ -74,9 +76,10 @@ int main(int argc, char* argv[])
     perror(argv[1]);
     exit(2);
   }
-
+/*
   if(isDup(argv[1], "f1", argv[1], "f2") == FALSE)
-  printf("FALSE\n");
+    printf("FALSE\n");*/
+    lsdir(argv[1]);
 
   closedir(dir);
   return 0;
