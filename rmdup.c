@@ -1,5 +1,12 @@
-
-#include "lsdir.c"
+#include <fcntl.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <errno.h>
 
 #define FALSE 0
 #define TRUE 1
@@ -37,8 +44,8 @@ int isDup(char path1[], char file1[], char path2[], char file2[])
         char name2[30];
         struct stat stat1, stat2;
 
-/*  if(file1 != file2)
-   return FALSE;*/
+      //  if(file1 != file2)
+     //     return FALSE;
         sprintf(name1, "%s/%s", path1, file1);
         sprintf(name2, "%s/%s", path2, file2);
 
@@ -57,23 +64,25 @@ int isDup(char path1[], char file1[], char path2[], char file2[])
 
 int main(int argc, char* argv[])
 {
-        //DIR *dir;
         if(argc != 2)
         {
                 fprintf(stderr, "Usage: %s <dir_name> \n", argv[0]);
                 exit(1);
         }
 
-        /*  if((dir = opendir(argv[1])) == NULL)
-           {
-                  perror(argv[1]);
-                  exit(2);
-           }*/
+      FILE *files = fopen("files.txt", "w");
+      fclose(files);
 
-        FILE *files = fopen("files.txt", "w");
-        lsdir(argv[1], files);
-        fclose(files);
+      execlp("./lsdir", "./lsdir", argv[1], NULL);
 
-        //closedir(dir);
+      /*int file = open("files.txt", O_RDWR);
+      dup2(file,STDIN_FILENO);//, file);
+      close(file);
+
+      file = open("files.txt", O_RDWR);
+      dup2(file, STDOUT_FILENO);
+      execlp("sort", "sort", "files.txt", NULL);
+      close(file);
+        closedir(dir*/
         return 0;
 }
