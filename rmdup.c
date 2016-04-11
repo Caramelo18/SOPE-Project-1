@@ -7,10 +7,35 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 #define FALSE 0
 #define TRUE 1
 #define BUF_LENGTH 256
+
+
+struct fileInfo {
+        char name[21];
+        char path[31];
+        unsigned int permissionAccess;
+        unsigned long date;
+};
+
+void getFileInfo(){
+
+        printf("aqui!!! :)\n" );
+        FILE *files = fopen("files.txt", "r");
+        /*if(files == NULL){
+           perror("files.txt");
+           printf("%d\n", errno);
+           }*/
+        char line[75];
+        while(fgets(line, 75, files)!=NULL) {
+                printf("%s", line);
+        }
+        fclose(files);
+        return;
+}
 
 int hasSameContent(char name1[], char name2[])
 {
@@ -44,8 +69,8 @@ int isDup(char path1[], char file1[], char path2[], char file2[])
         char name2[30];
         struct stat stat1, stat2;
 
-      //  if(file1 != file2)
-     //     return FALSE;
+        //  if(file1 != file2)
+        //     return FALSE;
         sprintf(name1, "%s/%s", path1, file1);
         sprintf(name2, "%s/%s", path2, file2);
 
@@ -64,25 +89,40 @@ int isDup(char path1[], char file1[], char path2[], char file2[])
 
 int main(int argc, char* argv[])
 {
+        int temp_std_out = dup(STDOUT_FILENO);
+        int temp_std_in = dup(STDIN_FILENO);
+
         if(argc != 2)
         {
                 fprintf(stderr, "Usage: %s <dir_name> \n", argv[0]);
                 exit(1);
         }
 
-      FILE *files = fopen("files.txt", "w");
-      fclose(files);
+        FILE *files = fopen("files.txt", "w");
+        fclose(files);
 
-      execlp("./lsdir", "./lsdir", argv[1], NULL);
+        pid_t pid;
+        if((pid=fork())==0)
+                execlp("./lsdir", "./lsdir", argv[1], NULL);
 
-      /*int file = open("files.txt", O_RDWR);
-      dup2(file,STDIN_FILENO);//, file);
-      close(file);
+        int status;
+        wait(&status);
+        //printf("AKKKKI AO LUAR AO PE DE TI AO PE DO MAR, SO O SONHO FICA SO ELE PODE FICAR\n");
 
-      file = open("files.txt", O_RDWR);
-      dup2(file, STDOUT_FILENO);
-      execlp("sort", "sort", "files.txt", NULL);
-      close(file);
-        closedir(dir*/
+        int file = open("files.txt", O_RDWR);
+        dup2(file,STDIN_FILENO);
+        dup2(file, STDOUT_FILENO);
+
+        if((pid = fork())==0)
+                execlp("sort", "sort", "files.txt", NULL);
+        wait(&status);
+        close(file);
+
+        //struct fileInfo *info; //[256];
+        dup2(temp_std_out,STDOUT_FILENO);
+        dup2(temp_std_in, STDIN_FILENO);
+        printf("aqui!!! :)\n" );
+        getFileInfo();
+
         return 0;
 }
