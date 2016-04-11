@@ -15,23 +15,45 @@
 
 
 struct fileInfo {
-        char name[21];
-        char path[31];
+        char name[25];
+        char path[50];
         unsigned int permissionAccess;
         unsigned long date;
 };
 
-void getFileInfo(){
-
-        printf("aqui!!! :)\n" );
+void getFileInfo(struct fileInfo *info)
+{
         FILE *files = fopen("files.txt", "r");
-        /*if(files == NULL){
+        if(files == NULL)
+        {
            perror("files.txt");
            printf("%d\n", errno);
-           }*/
-        char line[75];
-        while(fgets(line, 75, files)!=NULL) {
-                printf("%s", line);
+        }
+        char line[115];
+
+        int i = 0;
+        while(fgets(line, 115, files)!=NULL)
+        {
+          char name[25];
+          char path[50];
+          char permissions[6];
+          char date[12];
+
+          memcpy(name, &line[0], 23);
+          strcpy(info[i].name, name);
+
+          memcpy(path, &line[28], 47);
+          strcpy(info[i].path, path);
+
+          memcpy(permissions, &line[85], 6);
+          int perm = strtol(permissions, NULL, 10);
+          info[i].permissionAccess = perm;
+
+          memcpy(date, &line[96], 13);
+          int dat = strtol(date, NULL, 10);
+          info[i].date = dat;
+
+          i++;
         }
         fclose(files);
         return;
@@ -118,11 +140,12 @@ int main(int argc, char* argv[])
         wait(&status);
         close(file);
 
-        //struct fileInfo *info; //[256];
+        struct fileInfo info[256];
+
         dup2(temp_std_out,STDOUT_FILENO);
         dup2(temp_std_in, STDIN_FILENO);
-        printf("aqui!!! :)\n" );
-        getFileInfo();
+
+        getFileInfo(info);
 
         return 0;
 }

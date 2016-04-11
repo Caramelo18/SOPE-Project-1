@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
                         if(S_ISREG(statbuf.st_mode))
                         {
                                 FILE *files = fopen("files.txt", "a");
-                                sprintf(name, "%-20s %-30s %-7d %-10d %-13d\n", direntp->d_name, argv[1], (int)statbuf.st_size, statbuf.st_mode, (int)statbuf.st_mtime);
+                                sprintf(name, "%-25s %-50s %-7d %-10d %-13d\n", direntp->d_name, argv[1], (int)statbuf.st_size, statbuf.st_mode, (int)statbuf.st_mtime);
                                 fprintf(files,"%s", name);
                                 fclose(files);
                         }
