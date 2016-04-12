@@ -39,7 +39,8 @@ int main(int argc, char* argv[]){
                         if(S_ISREG(statbuf.st_mode))
                         {
                                 FILE *files = fopen("files.txt", "a");
-                                sprintf(name, "%s**%s**%d**%d**%d\n", direntp->d_name, argv[1], (int)statbuf.st_size, statbuf.st_mode, (int)statbuf.st_mtime);
+                                sprintf(name, "%s**%d**%s**%d**%d\n",
+                                      direntp->d_name, (int)statbuf.st_mtime, argv[1], (int)statbuf.st_size, statbuf.st_mode);
                                 fprintf(files,"%s", name);
                                 fclose(files);
                         }
@@ -48,7 +49,6 @@ int main(int argc, char* argv[]){
                                 pid = fork();
                                 if(pid == 0) {
                                         execlp("./lsdir", "./lsdir", name, NULL);
-                                        //return 0;
                                 }
                                 else   wait(&status);
 
