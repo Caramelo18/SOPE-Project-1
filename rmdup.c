@@ -13,14 +13,15 @@
 #define TRUE 1
 #define BUF_LENGTH 256
 
-
 struct fileInfo {
         char name[25];
         char path[50];
         unsigned int permissionAccess;
         unsigned long date;
+        int duplicated;
 };
 
+//Writes information from hard links to hlinks.txt
 void writeLinks(struct fileInfo info){
         FILE *files = fopen("hlinks.txt", "a");
         char name[200];
@@ -29,6 +30,8 @@ void writeLinks(struct fileInfo info){
         fclose(files);
 }
 
+
+//Returns number of files' information in files.txt
 int getFileInfo(struct fileInfo *info)
 {
         FILE *files = fopen("files.txt", "r");
@@ -65,11 +68,13 @@ int getFileInfo(struct fileInfo *info)
                 info[i].permissionAccess = perm;
 
                 i++;
+                info[i].duplicated = FALSE;
         }
         fclose(files);
         return i;
 }
 
+//Checks the content of file name1 and file2 and returns TRUE if the contents are equal or FALSE if not
 int hasSameContent(char name1[], char name2[])
 {
         FILE *f1, *f2;
@@ -96,7 +101,7 @@ int hasSameContent(char name1[], char name2[])
         return TRUE;
 }
 
-
+//Returns TRUE if the contents between f1 and f2 are the same and FALSE if not
 int isDup(struct fileInfo f1, struct fileInfo f2)
 {
         char name1[80];
@@ -112,6 +117,8 @@ int isDup(struct fileInfo f1, struct fileInfo f2)
         return hasSameContent(name1, name2);
 }
 
+
+//Creates hard links for files that are equal in the estabilished parameters
 void checkDupFiles(struct fileInfo *info, int size)
 {
         int i, j;
@@ -121,36 +128,34 @@ void checkDupFiles(struct fileInfo *info, int size)
                 {
                         int result;
                         if((result = isDup(info[i], info[j])) == TRUE) {
+                                if(info[j].duplicated == FALSE) {
+                                        info[j].duplicated = TRUE;
+                                        info[i].duplicated = TRUE;
+                                        pid_t pid;
+                                        if((pid=fork())==0) {
+                                                char file1[200];
+                                                char file2[200];
 
-                                pid_t pid;
-                                if((pid=fork())==0){
-                                  char file1[200];
-                                  char file2[200];
-                                  sprintf(file1, "%s/%s", info[i].path, info[i].name);
-                                  sprintf(file2, "%s/%s", info[j].path, info[j].name);
-                                        if(info[i].date < info[j].date) {
-                                              writeLinks(info[j]);
-
-                                            //  if((pid=fork()==0))
-                                            //    execlp("rm", "rm", "%s", file2);
-                                            //  wait(&status);
-                                              execlp("ln", "ln", "-f", file1, file2, NULL);
-
-                                        }else if(info[i].date > info[j].date){
-                                              writeLinks(info[i]);
-                                              execlp("ln", "ln", "-f", file2, file1, NULL);
+                                                sprintf(file1, "%s/%s", info[i].path, info[i].name);
+                                                sprintf(file2, "%s/%s", info[j].path, info[j].name);
+                                                writeLinks(info[j]);
+                                                //The way files.txt is ordered the first file is always older so there is no need to compare
+                                                execlp("ln", "ln", "-f", file1, file2, NULL);
                                         }
                                 }
                         }
-                        else if (result == FALSE);
+                        else if (result == FALSE) ;
                 }
         }
 }
 
 int main(int argc, char* argv[])
 {
+        //Creates backup of important descriptors
         int temp_std_out = dup(STDOUT_FILENO);
         int temp_std_in = dup(STDIN_FILENO);
+
+        printf("Ela sorriu, e ele foi atrás\n");
 
         if(argc != 2)
         {
@@ -158,36 +163,68 @@ int main(int argc, char* argv[])
                 exit(1);
         }
 
+        //Ensures that the files are empty
         FILE *files = fopen("files.txt", "w");
         fclose(files);
         files = fopen("hlinks.txt", "w");
         fclose(files);
 
         pid_t pid;
+        printf("Ela despiu-o, e ela o satisfaz\n");
+        printf("Passa a noite, passa o tempo devagar\n");
+        printf("Já é dia, já é hora de voltar.\n");
         if((pid=fork())==0)
                 execlp("./lsdir", "./lsdir", argv[1], NULL);
 
+                printf("Aqui ao luar, ao pé de ti, ao pé do mar\n");
+                printf("Só o sonho fica, só ele pode ficar.\n");
+                printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
+                printf("Só o sonho fica, só ele pode ficar.\n");
         int status;
         wait(&status);
-        //printf("AKKKKI AO LUAR AO PE DE TI AO PE DO MAR, SO O SONHO FICA SO ELE PODE FICAR\n");
 
         int file = open("files.txt", O_RDWR);
         dup2(file,STDIN_FILENO);
         dup2(file, STDOUT_FILENO);
 
         if((pid = fork())==0)
-                execlp("sort", "sort", "files.txt", NULL);
+                execlp("sort", "sort", "files.txt", NULL);  //Sort is done by the following order
+                                                            //    1-filename
+                                                            //    2-date of last modification
+                                                            //    3-path of file
+                                                            //    4-size of file
+                                                            //    5-permission access
         wait(&status);
         close(file);
 
         struct fileInfo info[256];
 
+        //Restores the standart STD output and input
         dup2(temp_std_out,STDOUT_FILENO);
         dup2(temp_std_in, STDIN_FILENO);
 
+        printf("Ela sorriu, e ele foi a trás\n");
+        printf("Ela despiu-o, e ela o satisfaz\n");
+        printf("Passa a noite, passa o tempo devagar\n");
+        printf("Já é dia, já é hora de voltar.\n");
+
         int number = getFileInfo(info);
 
+        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
+        printf("Só o sonho fica, só ele pode ficar.\n");
+        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
+        printf("Só o sonho fica, só ele pode ficar.\n");
         checkDupFiles(info, number);
+
+        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
+        printf("Só o sonho fica, só ele pode ficar.\n");
+        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
+        printf("Só o sonho fica, só ele pode ficar.\n");
+
+
+        printf("Só o sonho fica, só ele pode ficar.\n");
+        printf("Só o sonho fica, só ele pode ficar.\n");
+        printf("Só o sonho fica, só ele pode ficar.\n");
 
         return 0;
 }

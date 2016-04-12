@@ -28,6 +28,7 @@ int main(int argc, char* argv[]){
         while((direntp = readdir(dir)) != NULL)
         {
                 char name[200];
+                //.git folder was ignored so as to not handle sensitive files
                 if(strcmp(direntp->d_name, ".") == 0 || strcmp(direntp->d_name, "..") == 0 || strcmp(direntp->d_name, ".git") == 0) {}
                 else{
                         sprintf(name, "%s/%s", argv[1], direntp->d_name);
