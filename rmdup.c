@@ -30,6 +30,19 @@ void writeLinks(struct fileInfo info){
         fclose(files);
 }
 
+//Creates a hard link
+void createHardLink(struct fileInfo target, struct fileInfo linkName)
+{
+  char trgt[200];
+  char lknm[200];
+
+  sprintf(trgt, "%s/%s", target.path, target.name);
+  sprintf(lknm, "%s/%s", linkName.path, linkName.name);
+
+  writeLinks(linkName);
+  //The way files.txt is ordered the first file is always older so there is no need to compare
+  execlp("ln", "ln", "-f", trgt, lknm, NULL);
+}
 
 //Returns number of files' information in files.txt
 int getFileInfo(struct fileInfo *info)
@@ -127,24 +140,17 @@ void checkDupFiles(struct fileInfo *info, int size)
                 for(j = i + 1; j < size; j++)
                 {
                         int result;
-                        if((result = isDup(info[i], info[j])) == TRUE) {
+                        if((result = isDup(info[i], info[j])) == TRUE)
+                        {
                                 if(info[j].duplicated == FALSE) {
                                         info[j].duplicated = TRUE;
                                         info[i].duplicated = TRUE;
                                         pid_t pid;
                                         if((pid=fork())==0) {
-                                                char file1[200];
-                                                char file2[200];
-
-                                                sprintf(file1, "%s/%s", info[i].path, info[i].name);
-                                                sprintf(file2, "%s/%s", info[j].path, info[j].name);
-                                                writeLinks(info[j]);
-                                                //The way files.txt is ordered the first file is always older so there is no need to compare
-                                                execlp("ln", "ln", "-f", file1, file2, NULL);
+                                          createHardLink(info[i], info[j]);
                                         }
                                 }
                         }
-                        else if (result == FALSE) ;
                 }
         }
 }
@@ -154,8 +160,6 @@ int main(int argc, char* argv[])
         //Creates backup of important descriptors
         int temp_std_out = dup(STDOUT_FILENO);
         int temp_std_in = dup(STDIN_FILENO);
-
-        printf("Ela sorriu, e ele foi atrás\n");
 
         if(argc != 2)
         {
@@ -170,16 +174,9 @@ int main(int argc, char* argv[])
         fclose(files);
 
         pid_t pid;
-        printf("Ela despiu-o, e ela o satisfaz\n");
-        printf("Passa a noite, passa o tempo devagar\n");
-        printf("Já é dia, já é hora de voltar.\n");
         if((pid=fork())==0)
                 execlp("./lsdir", "./lsdir", argv[1], NULL);
 
-                printf("Aqui ao luar, ao pé de ti, ao pé do mar\n");
-                printf("Só o sonho fica, só ele pode ficar.\n");
-                printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
-                printf("Só o sonho fica, só ele pode ficar.\n");
         int status;
         wait(&status);
 
@@ -203,28 +200,10 @@ int main(int argc, char* argv[])
         dup2(temp_std_out,STDOUT_FILENO);
         dup2(temp_std_in, STDIN_FILENO);
 
-        printf("Ela sorriu, e ele foi a trás\n");
-        printf("Ela despiu-o, e ela o satisfaz\n");
-        printf("Passa a noite, passa o tempo devagar\n");
-        printf("Já é dia, já é hora de voltar.\n");
 
         int number = getFileInfo(info);
 
-        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
-        printf("Só o sonho fica, só ele pode ficar.\n");
-        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
-        printf("Só o sonho fica, só ele pode ficar.\n");
         checkDupFiles(info, number);
-
-        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
-        printf("Só o sonho fica, só ele pode ficar.\n");
-        printf("Aqui ao luar, ao pé de ti, ao pé do mar,\n");
-        printf("Só o sonho fica, só ele pode ficar.\n");
-
-
-        printf("Só o sonho fica, só ele pode ficar.\n");
-        printf("Só o sonho fica, só ele pode ficar.\n");
-        printf("Só o sonho fica, só ele pode ficar.\n");
 
         return 0;
 }

@@ -1,4 +1,3 @@
-#include <time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,8 +5,6 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <sys/wait.h>
 
 
@@ -37,6 +34,7 @@ int main(int argc, char* argv[]){
                                 perror("lstat error");
                                 exit(3);
                         }
+                        // if it is a regular file, stores its information on files.txt
                         if(S_ISREG(statbuf.st_mode))
                         {
                                 FILE *files = fopen("files.txt", "a");
@@ -45,6 +43,7 @@ int main(int argc, char* argv[]){
                                 fprintf(files,"%s", name);
                                 fclose(files);
                         }
+                        // if it is a directory launches a new proccess that will search the directory
                         else if(S_ISDIR(statbuf.st_mode))
                         {
                                 pid = fork();
