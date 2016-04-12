@@ -21,7 +21,7 @@ struct fileInfo {
         unsigned long date;
 };
 
-void getFileInfo(struct fileInfo *info)
+int getFileInfo(struct fileInfo *info)
 {
         FILE *files = fopen("files.txt", "r");
         if(files == NULL)
@@ -29,34 +29,37 @@ void getFileInfo(struct fileInfo *info)
            perror("files.txt");
            printf("%d\n", errno);
         }
-        char line[115];
+        char line[150];
 
         int i = 0;
-        while(fgets(line, 115, files)!=NULL)
+        while(fgets(line, 150, files)!=NULL)
         {
-          char name[25];
-          char path[50];
-          char permissions[6];
-          char date[12];
+          char *name;
+          char *path;
+          char *permissions;
+          char *date;
+          const char sep[3] = "**";
 
-          memcpy(name, &line[0], 23);
+          name = strtok(line, sep);
+          path = strtok(NULL, sep);
+          permissions = strtok(NULL, sep);
+          permissions = strtok(NULL, sep);
+          date = strtok(NULL, sep);
           strcpy(info[i].name, name);
 
-          memcpy(path, &line[28], 47);
           strcpy(info[i].path, path);
 
-          memcpy(permissions, &line[85], 6);
           int perm = strtol(permissions, NULL, 10);
           info[i].permissionAccess = perm;
 
-          memcpy(date, &line[96], 13);
           int dat = strtol(date, NULL, 10);
           info[i].date = dat;
+
 
           i++;
         }
         fclose(files);
-        return;
+        return i;
 }
 
 int hasSameContent(char name1[], char name2[])
@@ -65,49 +68,58 @@ int hasSameContent(char name1[], char name2[])
         char buf[BUF_LENGTH], buf1[BUF_LENGTH];
         if((f1 = fopen(name1, "r")) == NULL)
         {
-                perror(name1);
-                printf("%d\n", errno);
-                exit(2);
+              perror(name1);
+              printf("%d\n", errno);
+              exit(2);
         }
         if((f2 = fopen(name2, "r")) == NULL)
         {
-                perror(name2);
-                printf("%d\n", errno);
-                exit(2);
+              perror(name2);
+              printf("%d\n", errno);
+              exit(2);
         }
 
         while((fgets(buf, BUF_LENGTH, f1) != NULL) && fgets(buf1, BUF_LENGTH, f2) != NULL)
         {
-                if(strcmp(buf, buf1) != 0)
-                        return FALSE;
+            if(strcmp(buf, buf1) != 0)
+              return FALSE;
         }
 
         return TRUE;
 }
 
-int isDup(char path1[], char file1[], char path2[], char file2[])
+
+int isDup(struct fileInfo f1, struct fileInfo f2)
 {
-        char name1[30];
-        char name2[30];
-        struct stat stat1, stat2;
+        char name1[80];
+        char name2[80];
+        sprintf(name1, "%s/%s", f1.path, f1.name);
+        sprintf(name2, "%s/%s", f2.path, f2.name);
 
-        //  if(file1 != file2)
-        //     return FALSE;
-        sprintf(name1, "%s/%s", path1, file1);
-        sprintf(name2, "%s/%s", path2, file2);
+        if(strcmp(f1.name, f2.name) != 0)
+           return FALSE;
 
-        printf("%s\n", name1);
-        printf("%s\n", name2);
+        if(f1.permissionAccess != f2.permissionAccess)
+            return FALSE;
 
-        stat(name1, &stat1);
-        stat(name2, &stat2);
-
-        if(stat1.st_mode != stat2.st_mode)
-                return FALSE;
-
-        return hasSameContent(name1, name2);
+      printf("compairing: %s - %s\n", name1, name2);
+      return hasSameContent(name1, name2);
 }
 
+void checkDupFiles(struct fileInfo *info, int size)
+{
+  int i, j;
+  for(i = 0; i < size; i++)
+  {
+    for(j = i + 1; j < size; j++)
+    {
+      if(isDup(info[i], info[j]) == TRUE)
+        printf("EQUAL: %s - %s \n", info[i].name, info[j].name);
+      else
+        printf("NOT EQUAL: %s - %s \n", info[i].name, info[j].name);
+    }
+  }
+}
 
 int main(int argc, char* argv[])
 {
@@ -145,7 +157,9 @@ int main(int argc, char* argv[])
         dup2(temp_std_out,STDOUT_FILENO);
         dup2(temp_std_in, STDIN_FILENO);
 
-        getFileInfo(info);
+        int number = getFileInfo(info);
+
+        checkDupFiles(info, number);
 
         return 0;
 }
