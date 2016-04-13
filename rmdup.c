@@ -33,15 +33,15 @@ void writeLinks(struct fileInfo info){
 //Creates a hard link
 void createHardLink(struct fileInfo target, struct fileInfo linkName)
 {
-  char trgt[200];
-  char lknm[200];
+        char trgt[200];
+        char lknm[200];
 
-  sprintf(trgt, "%s/%s", target.path, target.name);
-  sprintf(lknm, "%s/%s", linkName.path, linkName.name);
+        sprintf(trgt, "%s/%s", target.path, target.name);
+        sprintf(lknm, "%s/%s", linkName.path, linkName.name);
 
-  writeLinks(linkName);
-  //The way files.txt is ordered the first file is always older so there is no need to compare
-  execlp("ln", "ln", "-f", trgt, lknm, NULL);
+        writeLinks(linkName);
+        //The way files.txt is ordered the first file is always older so there is no need to compare
+        execlp("ln", "ln", "-f", trgt, lknm, NULL);
 }
 
 //Returns number of files' information in files.txt
@@ -104,29 +104,41 @@ int hasSameContent(char name1[], char name2[])
                 printf("%d\n", errno);
                 exit(2);
         }
-
-        while((fgets(buf, BUF_LENGTH, f1) != NULL) && fgets(buf1, BUF_LENGTH, f2) != NULL)
+        int result = -1;
+        char *temp1;
+        char *temp2;
+        //printf("%s", name1);
+        while(result == -1)
         {
-                if(strcmp(buf, buf1) != 0)
-                        return FALSE;
-        }
+            temp1 = fgets(buf, BUF_LENGTH, f1);
+            temp2 = fgets(buf1, BUF_LENGTH, f2);
+            if((temp1 == NULL && temp2 != NULL) || (temp1 != NULL && temp2 == NULL))
+                    result = FALSE;
+            else if(temp1==NULL && temp2 == NULL)
+                result =TRUE;
+            if(strcmp(buf, buf1) != 0)
+                result = FALSE;
 
-        return TRUE;
+        }
+        fclose(f1);
+        fclose(f2);
+        return result;
 }
 
 //Returns TRUE if the contents between f1 and f2 are the same and FALSE if not
 int isDup(struct fileInfo f1, struct fileInfo f2)
 {
+        if(strcmp(f1.name, f2.name) != 0)
+              return FALSE;
+
+        if(f1.permissionAccess != f2.permissionAccess)
+              return FALSE;
+
         char name1[80];
         char name2[80];
         sprintf(name1, "%s/%s", f1.path, f1.name);
         sprintf(name2, "%s/%s", f2.path, f2.name);
 
-        if(strcmp(f1.name, f2.name) != 0)
-                return FALSE;
-
-        if(f1.permissionAccess != f2.permissionAccess)
-                return FALSE;
         return hasSameContent(name1, name2);
 }
 
@@ -139,15 +151,14 @@ void checkDupFiles(struct fileInfo *info, int size)
         {
                 for(j = i + 1; j < size; j++)
                 {
-                        int result;
-                        if((result = isDup(info[i], info[j])) == TRUE)
+                        if(isDup(info[i], info[j]) == TRUE)
                         {
                                 if(info[j].duplicated == FALSE) {
                                         info[j].duplicated = TRUE;
                                         info[i].duplicated = TRUE;
                                         pid_t pid;
                                         if((pid=fork())==0) {
-                                          createHardLink(info[i], info[j]);
+                                                createHardLink(info[i], info[j]);
                                         }
                                 }
                         }
