@@ -9,37 +9,42 @@
 #include <errno.h>
 #include <sys/wait.h>
 
-#define FALSE 0
-#define TRUE 1
-#define BUF_LENGTH 256
+#define FALSE       0
+#define TRUE        1
+#define BUF_LENGTH  256
+#define NAME_SIZE   128
+#define BASE_10     10
+#define EQUAL       0
 
 struct fileInfo {
-        char name[25];
-        char path[50];
+        char name[NAME_SIZE];
+        char path[BUF_LENGTH];
         unsigned int permissionAccess;
         unsigned long date;
         int duplicated;
 };
 
 //Writes information from hard links to hlinks.txt
-void writeLinks(struct fileInfo info){
+void writeLinks(struct fileInfo target, struct fileInfo linkName){
         FILE *files = fopen("hlinks.txt", "a");
-        char name[200];
-        sprintf(name, "%-20s %-30s\n", info.name, info.path);
-        fprintf(files, "%s", name);
+        char name1[BUF_LENGTH];
+        char name2[BUF_LENGTH];
+        sprintf(name1, "%s/%s", target.path, target.name);
+        sprintf(name2, "%s/%s", linkName.path, linkName.name);
+        fprintf(files, "Linked from source %s to target %s\n", name2, name1);
         fclose(files);
 }
 
 //Creates a hard link
 void createHardLink(struct fileInfo target, struct fileInfo linkName)
 {
-        char trgt[200];
-        char lknm[200];
+        char trgt[BUF_LENGTH];
+        char lknm[BUF_LENGTH];
 
         sprintf(trgt, "%s/%s", target.path, target.name);
         sprintf(lknm, "%s/%s", linkName.path, linkName.name);
 
-        writeLinks(linkName);
+        writeLinks(target, linkName);
         //The way files.txt is ordered the first file is always older so there is no need to compare
         execlp("ln", "ln", "-f", trgt, lknm, NULL);
 }
@@ -53,10 +58,10 @@ int getFileInfo(struct fileInfo *info)
                 perror("files.txt");
                 printf("%d\n", errno);
         }
-        char line[150];
+        char line[BUF_LENGTH];
 
         int i = 0;
-        while(fgets(line, 150, files)!=NULL)
+        while(fgets(line, BUF_LENGTH, files)!=NULL)
         {
                 char *name;
                 char *path;
@@ -67,17 +72,17 @@ int getFileInfo(struct fileInfo *info)
                 name = strtok(line, sep);
                 date = strtok(NULL, sep);
                 path = strtok(NULL, sep);
-                permissions = strtok(NULL, sep);
+                permissions = strtok(NULL, sep);   //Gets size but it is not important for comparisons
                 permissions = strtok(NULL, sep);
 
                 strcpy(info[i].name, name);
 
-                int dat = strtol(date, NULL, 10);
+                int dat = strtol(date, NULL, BASE_10);
                 info[i].date = dat;
 
                 strcpy(info[i].path, path);
 
-                int perm = strtol(permissions, NULL, 10);
+                int perm = strtol(permissions, NULL, BASE_10);
                 info[i].permissionAccess = perm;
 
                 i++;
@@ -107,7 +112,6 @@ int hasSameContent(char name1[], char name2[])
         int result = -1;
         char *temp1;
         char *temp2;
-        //printf("%s", name1);
         while(result == -1)
         {
             temp1 = fgets(buf, BUF_LENGTH, f1);
@@ -116,7 +120,7 @@ int hasSameContent(char name1[], char name2[])
                     result = FALSE;
             else if(temp1==NULL && temp2 == NULL)
                 result =TRUE;
-            if(strcmp(buf, buf1) != 0)
+            else if(strcmp(buf, buf1) != EQUAL)
                 result = FALSE;
 
         }
@@ -128,14 +132,14 @@ int hasSameContent(char name1[], char name2[])
 //Returns TRUE if the contents between f1 and f2 are the same and FALSE if not
 int isDup(struct fileInfo f1, struct fileInfo f2)
 {
-        if(strcmp(f1.name, f2.name) != 0)
+        if(strcmp(f1.name, f2.name) != EQUAL)
               return FALSE;
 
         if(f1.permissionAccess != f2.permissionAccess)
               return FALSE;
 
-        char name1[80];
-        char name2[80];
+        char name1[BUF_LENGTH];
+        char name2[BUF_LENGTH];
         sprintf(name1, "%s/%s", f1.path, f1.name);
         sprintf(name2, "%s/%s", f2.path, f2.name);
 
@@ -157,7 +161,7 @@ void checkDupFiles(struct fileInfo *info, int size)
                                         info[j].duplicated = TRUE;
                                         info[i].duplicated = TRUE;
                                         pid_t pid;
-                                        if((pid=fork())==0) {
+                                        if((pid=fork()) == 0) { //If child process
                                                 createHardLink(info[i], info[j]);
                                         }
                                 }
@@ -183,9 +187,11 @@ int main(int argc, char* argv[])
         fclose(files);
         files = fopen("hlinks.txt", "w");
         fclose(files);
+        files = fopen("log.txt", "w");
+        fclose(files);
 
         pid_t pid;
-        if((pid=fork())==0)
+        if((pid=fork())==0) //If child process
                 execlp("./lsdir", "./lsdir", argv[1], NULL);
 
         int status;
@@ -205,7 +211,7 @@ int main(int argc, char* argv[])
         wait(&status);
         close(file);
 
-        struct fileInfo info[256];
+        struct fileInfo info[BUF_LENGTH];
 
         //Restores the standart STD output and input
         dup2(temp_std_out,STDOUT_FILENO);
